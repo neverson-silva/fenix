@@ -1,0 +1,9 @@
+vendor/
+.idea/
+.buildpath
+.project
+composer.lock
+index.php
+index2.php
+.settings/
+dev/

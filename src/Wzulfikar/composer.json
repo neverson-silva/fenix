@@ -1,0 +1,16 @@
+{
+    "name": "wzulfikar/render-exception-with-whoops",
+    "description": "PHP Trait to render exception with Whoops",
+    "keywords": ["whoops", "exception", "trait"],
+    "license": "MIT",
+    "type": "project",
+    "require": {
+        "php" : "^5.5.9 || ^7.0",
+        "filp/whoops": "^2.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Wzulfikar\\WhoopsTrait\\": "src/"
+        }
+    }
+}
