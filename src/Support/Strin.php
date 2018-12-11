@@ -6,8 +6,6 @@ class Strin
 {
     private $value;
 
-    private $mathes;
-
 
     /**
      * Strin constructor
@@ -26,8 +24,11 @@ class Strin
      * @param string $glue
      * @return string
      */
-    public static function implode(array $values, $glue = ' ')
+    public static function join(array $values, $glue = ' ')
     {
+        if ($this->value) {
+            $values = array_unshift($values, $this->value);
+        }
         return array_implode($glue, $values);
     }
 
@@ -164,5 +165,107 @@ class Strin
         return $this;
     }
 
+    /**
+     * Quote string with slashes
+     * @return Strin
+     */
+    public function addSlashes()
+    {
+        $this->value = addSlashes($this->value);
+
+        return $this;
+    }
+
+    /**
+     * Strip whitespace (or other characters) from the end of a string
+     *
+     * @param $trimmed
+     * @return Strin
+     */
+    public function rtrim($trimmed = null)
+    {
+        $this->value = rtrim($this->value, $trimmed);
+
+        return $this;
+    }
+
+    public function trim($trim = null)
+    {
+        $this->value = trim($this->value, $trimmed);
+
+        return $this;
+    }
+
+    /**
+     * Alias to rtrim
+     * Strip whitespace (or other characters) from the end of a string
+     *
+     * @param $trimmed
+     * @return Strin
+     */
+    public function ltrim($trimmed = null)
+    {
+        $this->value = ltrim($this->value, $trimmed);
+
+        return $this;
+    }
+
+    /**
+     * Print a string
+     *
+     * @param string $value
+     * @return void
+     */
+    public function print($value = null)
+    {
+        print ($value ?? $this->value);
+    }
+
+    /**
+     * Echo out a value
+     *
+     * @param string $value
+     * @return void
+     */
+    public static function echo($value)
+    {
+        echo $value;
+    }
+
+    /**
+     * Reverse a string
+     *
+     * @param string $value
+     * @return string
+     */
+    public function reverse($value = null)
+    {
+        return strrev($value ?? $this->value);
+    }
+
+    public function upper($value = null)
+    {
+
+    }
+
+    public function lower($value = null)
+    {
+
+    }
+
+    public function ucwords($value = null)
+    {
+
+    }
+
+    public function ucfirst($value = null)
+    {
+
+    }
+
+    public function substr()
+    {
+        
+    }
 
 }
