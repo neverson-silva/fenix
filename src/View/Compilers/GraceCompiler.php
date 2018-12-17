@@ -4,6 +4,8 @@ namespace Fenix\View\Compilers;
 
 use Fenix\View\GracePatterns;
 use Fenix\Support\Collection;
+use Fenix\Support\Strin;
+use Fenix\Support\Arra;
 use Fenix\View\Tool;
 
 class GraceCompiler extends FenixCompiler
@@ -65,23 +67,30 @@ class GraceCompiler extends FenixCompiler
 
         $content = preg_replace_callback_array($search, $original);
 
-       $this->setContent($content);
+        $this->setContent($content);
 
         return $original != $content;
     }
 
+    /**
+     * Compile if
+     *
+     * @param array $matches
+     * @param integer $flag
+     * @return string
+     */
     protected function compileIf($matches, $flag = 0)
     {
         $matches = $this->removeEmpty($matches);
         
-        if ($this->isCommented($matches[0])) {
-            return $matches[0];
+        if ($this->isCommented( $matches->first() )) {
+            return $matches->first();
         }
-        if (stripos($matches[0], ':if=')) {
-            return sprintf('<?php if(%s): ?>', $matches[1]);
-        } elseif (stripos($matches[0], ':elseif=')) {
-            return sprintf('<?php elseif(%s): ?> ', $matches[1]);
-        } elseif (stripos($matches[0], ':else>')){
+        if ($matches->first()->position(':if=')) {
+            return Strin::format('<?php if(%s): ?>', $matches[1]);
+        } elseif ($matches->first()->position(':elseif=')) {
+            return Strin::format($matches[1], '<?php elseif(%s): ?>');
+        } elseif (Strin::create($matches[0])->position(':else>')){
             return '<?php else: ?>';
         } else {
             return '<?php endif; ?>';
@@ -99,19 +108,24 @@ class GraceCompiler extends FenixCompiler
     {
         $matches = $this->removeEmpty($matches);
 
-        if ($this->isCommented($matches[0])) {
-            return $matches[0];
+        if ($this->isCommented( $matches->first() )) {
+            return $matches->first();
         }
 
-        if (stripos($matches[0], 'foreach=')) {
-            if (count($matches) == 4) {                
-                return sprintf(
-                    '<?php foreach(%s as %s => %s): ?>', $matches[3], $matches[2], $matches[1]
+        if ($matches->first()->position('foreach=')) {
+            if ($matches->countEquals(4)) {  
+                return Strin::format(
+                    '<?php foreach(%s as %s => %s): ?>', 
+                    $matches->remove(0)->reverse()->getItems()
                 );
+
             } else {
-                return sprintf('<?php foreach(%s as %s): ?>', $matches[2], $matches[1]);
-            }
-        } elseif (stripos($matches[0], ':continue')){
+                return Strin::format(
+                    '<?php foreach(%s as %s): ?>', 
+                    $matches->remove(0, 3)->reverse()->getItems()
+                );
+           }
+        } elseif ($matches->first()->position(':continue')){
             return '<?php continue; ?>';
         } else {
             return '<?php endforeach; ?>';
@@ -128,12 +142,12 @@ class GraceCompiler extends FenixCompiler
     {
         $matches = $this->removeEmpty($matches);
 
-        if ($this->isCommented($matches[0])) {
-            return $matches[0];
+        if ($this->isCommented( $matches->first() )) {
+            return $matches->first();
         }
 
-        if (count($matches) == 2) {
-            return sprintf('<?php for(%s): ?>', $matches[1]);
+        if ($matches->countEquals(2)) {
+            return Strin::format('<?php for(%s): ?>', $matches[1]);
         }
         return '<?php endfor; ?>';
     }
@@ -148,12 +162,12 @@ class GraceCompiler extends FenixCompiler
     {
         $matches = $this->removeEmpty($matches);
 
-        if ($this->isCommented($matches[0])) {
-            return $matches[0];
+        if ($this->isCommented( $matches->first() )) {
+            return $matches->first();
         }
 
-        if (count($matches) == 2) {
-            return sprintf('<?php while(%s): ?>', $matches[1]);
+        if ($matches->countEquals(2)) {
+            return Strin::format('<?php while(%s): ?>', $matches[1]);
         }
         return '<?php endwhile; ?>';
     }
@@ -168,21 +182,24 @@ class GraceCompiler extends FenixCompiler
     {   
         $matches = $this->removeEmpty($matches);
 
-        if ($this->isCommented($matches[0])) {
-            return $matches[0];
+        if ($this->isCommented( $matches->first() )) {
+            return $matches->first();
         }
 
-        if (stripos($matches[0], 'switch')) {
-            if (count($matches) == 2) {
-                return sprintf('<?php switch(%s) : ?>', $matches[1]);
+        $first = $matches->first();
+
+        if ($first->position('switch')) {
+            if ($matches->countEquals(2)) {
+                return Strin::format('<?php switch(%s) : ?>', $matches[1]);
             }
             return '<?php endswitch; ?>';
-        } elseif (stripos($matches[0], 'case')) {
-            if (count($matches) == 2) {
-                $case = sprintf('<?php case %s : ?>', $matches[1]);
-                return preg_replace('/^\s+/', '' , $case);
+        } elseif ($first->position('case')) {
+            if ($matches->countEquals(2)) {
+                return (string) Strin::create('<?php case %s : ?')
+                                     ->formatWith($matches[1])
+                                     ->replaceNew('/^\s+/', '');
             }           
-        } elseif (preg_match('/\<php:default\>/',$matches[0])) {
+        } elseif ($first->match('/\<php:default\>/')) {
             return '<?php default : ?>';
         }
         return '<?php break; ?>';
@@ -199,10 +216,12 @@ class GraceCompiler extends FenixCompiler
     {
         $matches = $this->removeEmpty($matches);
 
-        if ($this->isCommented($matches[0])) {
-            return $matches[0];
+        $first = $matches->first();
+
+        if ($this->isCommented( $first )) {
+            return $first;
         }
-        if(stripos($matches[0], '/')) {
+        if($first->position('/')) {
             return '?>';
         }
         return '<?php';
@@ -218,14 +237,19 @@ class GraceCompiler extends FenixCompiler
     {
         $matches = $this->removeEmpty($matches);
 
-        if ($this->isCommented($matches[0])) {
-            return $matches[0];
+        $first = $matches->first();
+
+        if ($this->isCommented( $first )) {
+            return $first;
         }
 
-        if (count($matches) == 3){
-            return sprintf('<?php $this->includePartial("%s", %s) ?>', $matches[1], $matches[2]);
+        if ($matches->countEquals(3)){
+            return Strin::format(
+                '<?php $this->includePartial("%s", %s) ?>',
+                $matches->remove(0)->getItems()
+            );
         }
-        return sprintf('<?php $this->includePartial("%s") ?>', $matches[1]);
+        return  Strin::format('<?php $this->includePartial("%s") ?>', $matches[1]);
     }
 
     private function isCommented($string)
@@ -270,7 +294,7 @@ class GraceCompiler extends FenixCompiler
         if ($this->isCommented($matches[0])) {
             return $matches[0];
         }
-        return sprintf('<?php $this->includePartial("%s") ?>', $matches[1]);
+        return  Strin::format('<?php $this->includePartial("%s") ?>', $matches[1]);
     }
 
     /**
@@ -294,25 +318,42 @@ class GraceCompiler extends FenixCompiler
     {
 
         $pattern = '/\<php:include([\s])?=([\s])?\"(.*)\"([\s])?var([\s])?=([\s])?\"(.*)\"/';
-        preg_match($pattern, $matches[0], $matches);
 
-        if(!isset($matches[3])) {
+        $matches = $this->removeEmpty(
+            $matches->first()->match($pattern, null, true)
+        );
+
+        if(!isset($matches[2])) {
             return '';
         }
-        $matches = $this->removeEmpty($matches);
-        $includeFile = $matches[1];
-        $variables = $matches[3];
-        if ($this->isCompactable($variables)) {
-            $args = explode(',', str_replace([', ', ',', ' , '], ',', $variables));
-            $colunized = array_map(function($arg){
-                return "'" . $arg ."'";
-            }, $args);
 
-            return sprintf('<?php $this->includePartial("%s", compact(%s)) ?>', $includeFile, implode(', ', $colunized));
+        $includeFile = $matches[1];
+
+        $variables = $matches[2];
+        
+        if ($this->isCompactable($variables)) {
+
+            $args = Strin::explode(',', 
+               (string) $variables->replaceNew([', ', ',', ' , '], ',')
+            );
+
+            $colunized = $args->map(function($arg){
+                return  "'" . (string) $arg ."'";
+            });
+
+            return Strin::format(
+                '<?php $this->includePartial("%s", compact(%s)) ?>',
+                $includeFile, (string) $colunized->implode(', ')
+            );
         }
-        $compacts = explode(',', str_replace([', ', ',', ' , '], ',', $variables));
-        $aliased = $this->getAliased($compacts);
-        return sprintf('<?php $this->includePartial("%s", %s) ?>', $includeFile, $aliased); 
+        $compacts = Strin::explode(
+            ',',  (string) $variables->replaceNew([', ', ',', ' , '], ',')
+        );
+
+        return Strin::format(
+            '<?php $this->includePartial("%s", %s) ?>', $includeFile, $this->getAliased($compacts)
+        );
+
     }
 
     /**
@@ -335,18 +376,32 @@ class GraceCompiler extends FenixCompiler
      */
     protected function getAliased($compacts)
     {
-        $aliased = [];
+        $aliased = new Arra();
 
-        foreach ($compacts as $compact) {
-            $cifrao = preg_match('/\'(.*)\'/', $compact) ? '' : '$';
-            if ($this->isCompactable($compact) ) {
-                $aliased[] = sprintf("'%s' => %s%s", trim($compact), $cifrao, trim($compact));
+        $string = new Strin();
+
+        $compacts->map(function($compact) use($aliased) {
+
+            $cifrao = $compact->match('/\'(.*)\'/') ? '' : '$';
+            if ($this->isCompactable($compact)) {
+                $aliased->push(
+                    Strin::format(
+                        "'%s' => %s%s", 
+                        (string) $compact->trim(), $cifrao, (string) $compact->trim()
+                    )
+                );
             } else {
-                $args = explode(' to ', str_replace(['to ', ' to '], ' to ', $compact));
-                $aliased[] = sprintf("'%s' => %s%s", trim($args[1]), $cifrao, trim($args[0])); //"'{$args[0]}' => ".  '$' ."{$args[1]}";
+                $args = Strin::explode(' to ', (string) $compact->replaceNew(['to ', ' to '], ' to ') );
+                $aliased->push(
+                    Strin::format(
+                        "'%s' => %s%s", 
+                        (string) $args[1]->trim(), $cifrao, (string) $args[0]->trim()
+                    )
+                );
             }
-        }
-        return "[" . implode(', ', $aliased) . "]";
+
+        });
+        return (string) "[" . $aliased->implode(', ') .  "]";
     }
 
 }

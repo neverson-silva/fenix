@@ -279,7 +279,7 @@ class Model extends Relationship implements JsonSerializable, IteratorAggregate,
     public function newInstance($attributes = [])
     {
 
-        $new = new static($attributes);
+        $new = new static((array) $attributes);
 
         $new->setConnection(
             $this->getConnection()

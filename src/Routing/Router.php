@@ -4,8 +4,8 @@ namespace Fenix\Routing;
 
 use Fenix\Contracts\Routing\Router as RouterContract;
 use Fenix\Contracts\Routing\RouteCollection;
-use Fenix\Http\Message\ServerRequest;
 use Psr\Http\Message\ServerRequestInterface;
+use Fenix\Http\Message\ServerRequest;
 use Psr\Http\Message\UriInterface;
 use Fenix\Traits\Macro;
 use Closure;
@@ -36,7 +36,7 @@ class Router implements RouterContract
                 $this->setUri($this->serverRequest->getUriFromGlobals());
             }
         }
-        if ($uri) {
+        if ($uri && !$serverRequest) {
             $this->setUri($uri);
         }
 
@@ -84,40 +84,95 @@ class Router implements RouterContract
         return is_null($offset) ? $this->currentAction : $this->currentAction[$offset];
     }
 
+    /**
+     * Add an http method to routes collection
+     * @param $uri
+     * @param $call
+     * @return mixed
+     */
     public function addRoute($method, $uri, $call)
     {
         if ($this->prefix !== null) {
             $uri = $this->prefix . '/' . ltrim($uri, '/');
         }
-        return $this->routes->add($method, $uri, $call);
+        $this->routes->add($method, $uri, $call);
+
+        return $this;
     }
 
+    /**
+     * Add an http method to routes collection
+     * @param $uri
+     * @param $call
+     * @return mixed
+     */
     public function get($uri, $call)
     {
 
         return $this->addRoute('GET', $uri, $call);
     }
+
+    /**
+     * Add an http method to routes collection
+     * @param $uri
+     * @param $call
+     * @return mixed
+     */
     public function post($uri, $call)
     {
         return $this->addRoute('POST', $uri, $call);
     }
+
+    /**
+     * Add an http method to routes collection
+     * @param $uri
+     * @param $call
+     * @return mixed
+     */
     public function delete($uri, $call)
     {
         return $this->addRoute('DELETE', $uri, $call);
     }
+
+    /**
+     * Add an http method to routes collection
+     * @param $uri
+     * @param $call
+     * @return mixed
+     */
     public function put($uri, $call)
     {
         return $this->addRoute('PUT', $uri, $call);
     }
+
+    /**
+     * Add an http method to routes collection
+     * @param $uri
+     * @param $call
+     * @return mixed
+     */
     public function options($uri, $call)
     {
         return $this->addRoute('OPTIONS', $uri, $call);
     }
+
+    /**
+     * Add an http method to routes collection
+     * @param $uri
+     * @param $call
+     * @return mixed
+     */
     public function header($uri, $call)
     {
         return $this->addRoute('HEADER', $uri, $call);
     }
 
+    /**
+     * Start the route system
+     *
+     * @return $this
+     * @throws \Exception
+     */
     public function run()
     {
         if (!$this->serverRequest) {
@@ -230,14 +285,14 @@ class Router implements RouterContract
      */
     public function resource(string $uri, string $controller)
     {
-        $this->get($uri, "$controller@index");
-        $this->get("$uri/show/{id}", "$controller@show");
-        $this->get("$uri/create", "$controller@create");
-        $this->post($uri, "$controller@store");
-        $this->get("$uri/edit/{id}", "$controller@edit");
-        $this->post("$uri/update/{id}", "$controller@update");
-        $this->put("$uri/update/{id}", "$controller@update");
-        $this->post("$uri/delete/{id}", "$controller@delete");
+        $this->get($uri, "$controller@index")
+             ->get("$uri/show/{id}", "$controller@show")
+             ->get("$uri/create", "$controller@create")
+             ->post($uri, "$controller@store")
+             ->get("$uri/edit/{id}", "$controller@edit")
+             ->post("$uri/update/{id}", "$controller@update")
+             ->put("$uri/update/{id}", "$controller@update")
+             ->post("$uri/delete/{id}", "$controller@delete");
     }
 
 }

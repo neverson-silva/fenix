@@ -2,19 +2,51 @@
 
 namespace Fenix\Support;
 
+use InvalidArgumentException;
+
+
 class Strin
 {
     private $value;
 
+
+    public function __toString()
+    {
+        return $this->value;
+    }
 
     /**
      * Strin constructor
      *
      * @param string $value
      */
-    public function __construct(string $value)
+    public function __construct(string $value = null)
     {
         $this->value = $value;
+    }
+
+    /**
+     * Get Strin value
+     *
+     * @return string
+     */
+    public function getValue($value = null)
+    {
+        if ($value !== null && $value instanceof self) {
+            return $value->getValue();
+        }
+        return $this->value;
+    }
+
+    /**
+     * Get a pattern
+     *
+     * @param mixed $pattern
+     * @return string
+     */
+    private function getPattern($pattern)
+    {
+        return $pattern instanceof self ? $pattern->getvalue() : $pattern;
     }
 
     /**
@@ -24,12 +56,41 @@ class Strin
      * @param string $glue
      * @return string
      */
-    public static function join(array $values, $glue = ' ')
+    public function join(array $values, $glue = ' ')
     {
         if ($this->value) {
             $values = array_unshift($values, $this->value);
         }
-        return array_implode($glue, $values);
+        return implode($glue, static::mapString($values));
+    }
+
+
+     /**
+     * Implode an array into a string in a static context
+     *
+     * @param array $values
+     * @param string $glue
+     * @return string
+     */
+    public static function implode(array $values, $glue = '')
+    {
+        return implode($glue, static::mapString($values));
+    }
+
+    /**
+     * Explode a Strin and return a Arra
+     *
+     * @param string $delimiter
+     * @param string $values
+     * @return Arra
+     */
+    public static function explode($delimiter, $values) : Arra
+    {
+        return new Arra(
+                array_map(function($value){
+                    return new static ($value);
+                }, explode($delimiter, $values))
+            );
     }
 
     /**
@@ -43,7 +104,20 @@ class Strin
      */
     public static function toString(array $values, $glue = ' ')
     {
-        return new static(array_implode($glue, $values));
+        return new static(implode($glue, static::mapString($values)));
+    }
+
+    /**
+     * Map strin to an array
+     *
+     * @param array $values
+     * @return array
+     */
+    private static function mapString(array $values)
+    {
+        return array_map(function($value){
+            return $value instanceof self ? $value->getValue() : (string) $value;
+        }, $values);
     }
 
     /**
@@ -54,7 +128,7 @@ class Strin
      */
     public function toCollection($needle)
     {
-        return new Collection(array_explode($needle, $this->values));
+        return new Collection(explode($needle, $this->values));
     }
 
     /**
@@ -63,15 +137,17 @@ class Strin
      * @param string $pattern
      * @param string $value
      * @param int $options
-     * @return array
+     * @return Arra
      */
     public function matchAll(string $pattern, string $value = null, $options = PREG_PATTERN_ORDER)
     {
-        $value = $value ?? $this->value;
+        $value = $this->getValue($value);
+
+        $pattern = $this->getPattern($pattern);
 
         preg_match_all($pattern, $value, $matches, $options);
 
-        return $matches;
+        return new Arra($matches);
     }
 
     /**
@@ -82,32 +158,63 @@ class Strin
      * @param boolean $getMatches
      * @return boolean|array
      */
-    public function match(string $pattern, string $value = null, $getMatches = false)
+    public function match(string $pattern, $value = null, $getMatches = false)
     {
-        $value = $value ?? $this->value;
+        $value = $this->getValue($value);
+
+        $pattern = $this->getPattern($pattern);
 
         $matched = preg_match($pattern, $value, $matches);
 
         if ($getMatches) {
-            return $matches;
+            return empty($matches) ? false : $matches;
         }
 
-        return $matched;
+        return $matched == 1 ? true : false;
     }   
 
-    public function replace(string $pattern, string $replace, $value = null )
+    /**
+     * Replace portion of a string
+     *
+     * @param string $pattern
+     * @param string $replace
+     * @param string $value
+     * @param boolean $new
+     * @return boolean
+     */
+    public function replace($pattern, $replace = null, $value = null, $new = false )
     {
-        $value = $value ?? $this->value;
+       $pattern = $this->getPattern($pattern);
 
-        $original = $this->value;
+        $value = $this->getValue($value);
 
         $replaced = $this->isPattern($pattern) ?
                     preg_replace($pattern, $replace, $value) :
                     str_replace($pattern, $replace, $value);
 
+        $original = $this->value;
+
+
+        if ($new) {
+            return $replaced;
+        }
+
         $this->value = $replaced;
 
         return $original !== $replaced ? $replaced : false;
+    }
+
+    /**
+     * Replace a string and return a new instance
+     *
+     * @param string $pattern
+     * @param string $replace
+     * @param string $value
+     * @return Strin
+     */
+    public function replaceNew($pattern, $replace, $value = null)
+    {
+        return new static($this->replace($pattern, $replace, $value, true));
     }
 
     /**
@@ -116,9 +223,18 @@ class Strin
      * @param string $pattern
      * @return boolean
      */
-    private function isPattern(string $pattern)
+    private function isPattern($pattern)
     {
-        return preg_match('/\/(.*)\//', $pattern);
+        if (is_array($pattern)) {
+            foreach ($pattern as $value) {
+                if (!preg_match('/^\/(.*)\/$/', $value instanceof self ?
+                    $value->getValue() : $value )) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return preg_match('/^\/(.*)\/$/', $pattern instanceof self ? $pattern->getValue() : $pattern);
     }
 
     /**
@@ -127,7 +243,29 @@ class Strin
 
     public static function format($value, ...$params)
     {
+        if (is_array($params[0])) {
+            $params = $params[0];
+        } else {
+            
+        }
+        $params = array_map(function($param){
+            return (string) $param;
+        },$params);
+
         return vsprintf($value, $params);
+    }
+
+    /**
+     * Format
+     *
+     * @param  ...$params
+     * @return Strin
+     */
+    public function formatWith(...$params)
+    {
+        $this->value = static::format($this->value, $params);
+
+        return $this;
     }
 
     /**
@@ -182,16 +320,22 @@ class Strin
      * @param $trimmed
      * @return Strin
      */
-    public function rtrim($trimmed = null)
+    public function rtrim($trimmed = ' ')
     {
         $this->value = rtrim($this->value, $trimmed);
 
         return $this;
     }
 
-    public function trim($trim = null)
+    /**
+     * Trim
+     *
+     * @param string $trim
+     * @return Strin
+     */
+    public function trim($trim = ' ')
     {
-        $this->value = trim($this->value, $trimmed);
+        $this->value = trim($this->value, $trim);
 
         return $this;
     }
@@ -203,7 +347,7 @@ class Strin
      * @param $trimmed
      * @return Strin
      */
-    public function ltrim($trimmed = null)
+    public function ltrim($trimmed = ' ')
     {
         $this->value = ltrim($this->value, $trimmed);
 
@@ -243,29 +387,153 @@ class Strin
         return strrev($value ?? $this->value);
     }
 
+    /**
+     * All charecters to upper
+     *
+     * @param string $value
+     * @return string
+     */
     public function upper($value = null)
     {
+        $value = $this->getValue($value);
 
+        $this->value = strtoupper($value);
+
+        return $this->value;
     }
 
+    /**
+     * All characters to lower
+     *
+     * @param string $value
+     * @return string
+     */
     public function lower($value = null)
     {
+        $value = $this->getValue($value);
 
+        $this->value = strtolower($value);
+
+        return $this->value;
     }
 
+    /**
+     * All first letters to upper case
+     *
+     * @param string $value
+     * @return string
+     */
     public function ucwords($value = null)
     {
+        $value = $this->getValue($value);
 
+        $this->value = ucwords($value);
+
+        return $this->value;
     }
 
+    /**
+     * First charecter to upper case
+     *
+     * @param string $value
+     * @return string
+     */
     public function ucfirst($value = null)
     {
+        $value = $this->getValue($value);
 
+        $this->value = ucfirst($value);
+
+        return $this->value;
     }
 
-    public function substr()
+    /**
+     *  Retorna uma parte de uma string
+     *
+     * @param int $start
+     * @param int $length
+     * @return Strin
+     */
+    public function substr($start, $length)
     {
-        
+        return new static(substr($this->value, $start, $length));
     }
 
+    /**
+     * Encontra a primeira ocorrencia de uma string sem diferenciar maiúsculas e minúsculas
+     * @return int|boolean
+     */
+    public function position($needle)
+    {
+        return stripos($this->value, $needle);
+    }
+
+    /**
+     * Html entities
+     *
+     * @return Strin
+     */
+    public function entitiesHtml()
+    {
+        $this->value = htmlentities($this->value);
+
+        return $this;
+    }
+
+    /**
+     * Compare two strings
+     *
+     * @param string $value
+     * @return boolean
+     */
+    public function equals($value)
+    {
+        return $value instanceof self ? 
+               $value->getValue() === $this->getValue() :
+               $value === $this->getValue();
+    }
+
+    public static function compare($value, $second)
+    {
+        $value = $value instanceof self ? $value->getValue() : $value;
+        $second = $second instanceof self ? $second->getValue() : $second;
+
+        return $value === $second;
+    }
+
+    /**
+     * Create a Strin comparing default value
+     *
+     * @param string $value
+     * @param string $equal
+     * @param string $default
+     * @return Strin
+     */
+    public static function withDefault($value, $equal, $default)
+    { 
+        $value = $value == $equal ? $default : $value;
+
+        return new static($value);
+    }
+
+    /**
+     * Create a new instance
+     *
+     * @param string $value
+     * @return Strin
+     */
+    public static function create($value)
+    {
+        return new static((string) $value);
+    }
+
+    public function wrap(array $values)
+    {
+        if (count($values) > 2) {
+            throw new InvalidArgumentException("The array of values can contain only 2 values");
+        }
+        $this->value = $values[0] . $this->value . $values[1];
+
+        return $this;
+    }
 }

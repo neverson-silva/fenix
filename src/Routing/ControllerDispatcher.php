@@ -38,6 +38,12 @@ class ControllerDispatcher
         return $this->makeResponse($controller->{$method}(...array_values($parameters)));
     }
 
+    /**
+     * Make a new response
+     *
+     * @param $call
+     * @return Response
+     */
     public function makeResponse($call)
     {
         return new Response(http_response_code(), [], $call);

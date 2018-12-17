@@ -15,7 +15,7 @@ class Section extends Component
      * @param Content $content
      * @return void
      */
-    public function findSections($hasSection, array $matches = [], string $sectionValue, Content &$content)
+    public function findSections($hasSection, $matches = [], string $sectionValue, Content &$content)
     {
         if (!isset($matches[1])) {
             return;

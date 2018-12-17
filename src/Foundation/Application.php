@@ -2,7 +2,7 @@
 
 namespace Fenix\Foundation;
 
-use http\Exception\BadMethodCallException;
+use Wzulfikar\WhoopsTrait\RenderExceptionWithWhoops;
 use Psr\Http\Message\ServerRequestInterface;
 use Fenix\Contracts\Container\Container;
 use Fenix\Contracts\Support\Renderable;
@@ -11,10 +11,11 @@ use Fenix\Contracts\Foundation\App;
 use Fenix\Routing\RouteCollection;
 use Fenix\Http\Message\Response;
 use Fenix\Support\Collection;
+use BadMethodCallException;
 use Fenix\Routing\Router;
 use Fenix\Routing\Route;
 use Fenix\Traits\Macro;
-use Wzulfikar\WhoopsTrait\RenderExceptionWithWhoops;
+
 
 /**
  * Application

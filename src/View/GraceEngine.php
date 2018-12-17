@@ -13,6 +13,14 @@ class GraceEngine extends FenixEngine
 
     }
 
+    /**
+     * Renders a view
+     *
+     * @param string $view
+     * @param array $params
+     * @param boolean $include
+     * @return stream
+     */
     public function render(string $view, array $params = [], $include = true)
     {
         if (!empty($params)) extract($params);

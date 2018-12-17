@@ -45,6 +45,7 @@ class Route
      * @param Router|null $router
      * @param Container|null $container
      * @param null $controllerNamespace
+     * @throws \Exception
      */
     public function __construct(Router $router = null, Container $container = null, $controllerNamespace = null)
     {
@@ -61,12 +62,21 @@ class Route
 
     }
 
+    /**
+     * Initialize route system
+     *
+     * @throws \Exception
+     */
     public function initializeRouteSystem()
     {
         $this->router = $this->router->run();
         $this->setParameters();
     }
 
+    /**
+     * Set parameters for the route
+     * @return void
+     */
     private function setParameters()
     {
         if (isset($this->router->getCurrentAction()['parameters'])) {
@@ -77,7 +87,7 @@ class Route
     }
 
     /**
-     * Run routing sistem
+     * Run routing system
      *
      * @return mixed
      * @throws \Exception
@@ -122,7 +132,7 @@ class Route
         $callable = $this->parseCallable();
 
         $dependencies = $this->container->solveMethod($callable['callback'], $callable['parameters'] ?? [])
-                                            ->getSolvedParameters();
+                                        ->getSolvedParameters();
         return (new Response(http_response_code(), [],
             $callable['callback'](...array_values($dependencies))
         ));

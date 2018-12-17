@@ -4,6 +4,8 @@ namespace Fenix\Routing;
 
 use Fenix\Contracts\Routing\UrlParameter;
 use Fenix\Support\Collection;
+use Fenix\Support\Strin;
+use Fenix\Support\Arra;
 
 final class UrlMatcher implements UrlParameter
 {
@@ -33,13 +35,18 @@ final class UrlMatcher implements UrlParameter
      */
     public function matchParameters($url)
     {
-        $url = $url == '' ? '/' : $url;
+        $url = Strin::withDefault($url, '', '/');
+
         $rota = $this->routes->filter(function($item, $key) use ($url){
-            if ($key === '/') {
-                return $key == $url;
+            
+            if (Strin::compare($key, '/')) {
+                return $url->equals($key);
             }
-            return trim($key, '/') === $url;
+            return Strin::create($key)
+                        ->trim('/')
+                        ->equals($url);
         });
+
         if (!is_array($rota)) {
             if (!$rota->isEmpty()) {
                 return [
@@ -48,12 +55,13 @@ final class UrlMatcher implements UrlParameter
                 ];
             }
         }
-
         $rotaComParametros = $this->routes->filter(function($item, $key) use($url){
-            return strpos($key, '{');
+            return Strin::create($key)->position('{');
         });
+
         $callback = null;
         $parameters = false;
+
         foreach ($rotaComParametros as $rota => $action ) {
             $parameters = $this->getParametersFromUrl($rota, $url);
             if ($parameters != false) {
@@ -74,27 +82,41 @@ final class UrlMatcher implements UrlParameter
      * @param string $subject
      * @return array|bool
      */
-    public function getParametersFromUrl(string $url, string $subject)
+    public function getParametersFromUrl($url, $subject)
     {
-        $url = $url == '/' ? $url : trim($url, '/');
-        $subject = $subject == '/' ? $subject : trim($subject, '/');
-        preg_match_all('/\{([^\}]*)\}/', $url, $variables);
-        $regex = str_replace('/', '\/', $url);
-        foreach ($variables[1] as $key => $variable) {
-            $as = explode(':', $variable);
-            $replacement = $as[1] ?? '([a-zA-Z0-9\-\_\ ]+)';
-            if (isset($variables[$key])) {
-                $regex = str_replace($variables[$key], $replacement, $regex);
+        $url = Strin::withDefault($url, '/', $url)->trim('/');
+
+        $subject = Strin::withDefault($subject, '/', $subject)->trim('/');
+
+        $variables = $url->matchAll('/\{([^\}]*)\}/');
+
+        $regex = $url->replaceNew('/', '\/');
+
+        $variables->get(1)->map(function($variable, $key) use($regex, $variables) {
+
+            $replacement = (string) Strin::explode(':', $variable)->get(1, '([a-zA-Z0-9\-\_\ ]+)');
+
+            if ($variables->exists($key)) {
+
+                $variable = $variables[$key];
+
+                if ($variable instanceof Arra) {
+                    $variable = $variable->getItems();
+                }
+                $regex->replace($variable, $replacement);
             }
-        }
-        $regex = preg_replace('/{([a-zA-Z]+)}/', '([a-zA-Z0-9+])', $regex);
-        $result = preg_match('/^' . $regex . '$/', $subject, $params);
+        });
+
+        $regex->replace('/{([a-zA-Z]+)}/', '([a-zA-Z0-9+])');
+
+        $result = $subject->match($regex->wrap(['/^', '$/']), null, true);
+
         if ($result) {
-            array_shift($params);
+            array_shift($result);
             $parameters = [];
-            if (count($variables[1]) == count($params)) {
-                for ($i = 0; $i < count($params); $i++) {
-                    $parameters[$variables[1][$i]] = $params[$i];
+            if (count($variables[1]) == count($result)) {
+                for ($i = 0; $i < count($result); $i++) {
+                    $parameters[$variables[1][$i]] = $result[$i];
                 }
             }
             return $parameters;

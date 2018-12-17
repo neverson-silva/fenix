@@ -136,11 +136,11 @@ class Builder
             return $results;
         }
         if ($results->count() == 1){
-            return $this->model->newInstance((array) $results->first());
+            return $this->model->newInstance($results->first());
         }
 
         return $results->map(function($result){
-            return $this->model->cloneInstance(    $result);
+            return $this->model->cloneInstance( $result);
         });
     }
     /**
