@@ -235,6 +235,24 @@ class Connection
 
     }
 
+    public function insertWithLastInsertedId($query, $parameters)
+    {
+        $this->beginTransaction();
+
+        $statement = $this->prepared($query);
+
+        $this->bindValues($statement, $parameters);
+
+        $statement->execute();
+
+        $id = $this->getPDO()->lastInsertId();
+
+        $this->commit();
+
+        return $id;
+
+    }
+
     /**
      * Prepare and bind values to statment before do anything
      *

@@ -952,6 +952,26 @@ class Builder
     }
 
     /**
+     * Insert values into database and get last inserted id
+     *
+     * @param array $values
+     * @return int
+     */
+    public function insertWithLastInsertedId(array $values)
+    {
+        $query = $this->grammar->compilarInsert($this, $values);
+
+        if (!$this->from && $this->grammar->getTablePrefix()) {
+            $this->from = $this->grammar->getTablePrefix();
+
+            return $this->insertWithLastInsertedId($values);
+        }
+        $this->reset();
+
+        return $this->connection->insertWithLastInsertedId($query, $this->getParameters());
+    }
+
+    /**
      * Get the connection instance
      *
      * @return Conection

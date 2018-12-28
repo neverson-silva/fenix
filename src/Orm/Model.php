@@ -578,4 +578,19 @@ class Model extends Relationship implements JsonSerializable, IteratorAggregate,
         return count($this->getAttributes());
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param array $data
+     * @return integer
+     */
+    public function saveWithId(array $data = [])
+    {
+        if (!empty($update)) {
+            $this->setAttributes($update);
+        }
+
+        return $this->serve(false)->insertWithLastInsertedId($this->getAttributes());
+    }
+
 }

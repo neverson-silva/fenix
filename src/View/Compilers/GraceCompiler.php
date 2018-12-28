@@ -89,7 +89,7 @@ class GraceCompiler extends FenixCompiler
         if ($matches->first()->position(':if=')) {
             return Strin::format('<?php if(%s): ?>', $matches[1]);
         } elseif ($matches->first()->position(':elseif=')) {
-            return Strin::format($matches[1], '<?php elseif(%s): ?>');
+            return Strin::format('<?php elseif(%s): ?>', $matches[1]);
         } elseif (Strin::create($matches[0])->position(':else>')){
             return '<?php else: ?>';
         } else {
