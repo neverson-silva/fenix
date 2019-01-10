@@ -158,12 +158,19 @@ class Route
      */
     public function parseCallback()
     {
-        $callback = $this->router->getCurrentAction()['callback'];
-        return explode('@', $callback);
+        return explode('@', $this->parseCallable('callback'));
     }
 
-    public function parseCallable()
+    /**
+    * Parse the callable call
+    *
+    *
+    */
+    public function parseCallable($offset = null)
     {
+        if ($offset) {
+            return $this->router->getCurrentAction()[$offset];
+        }
         return $this->router->getCurrentAction();
     }
 
