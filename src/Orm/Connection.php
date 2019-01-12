@@ -356,5 +356,7 @@ class Connection
         return $this->getPdo() instanceof PDO;
     }
 
+
+
 }
 

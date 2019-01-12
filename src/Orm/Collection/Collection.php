@@ -58,7 +58,7 @@ class Collection extends CollectionParent
             }
            return $this->items[0]->$name;
         }
-        return $this->items[$name];
+        return $this->items[$name] ?? null;
 
     }
     

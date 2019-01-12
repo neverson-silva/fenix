@@ -201,10 +201,18 @@ class Model extends Relationship implements JsonSerializable, IteratorAggregate,
      */
     public function hasRelation($relation)
     {
-        if (is_array($this->relations)) {
-            return isset($this->relations[$relation]);
+        if (!$this->relations) {
+            return false;
         }
-        return property_exists($this->relations, $relation);
+
+        if (is_array($this->relations) && isset($this->relations[$relation])) {
+            return true;
+        } elseif (is_object($this->relations) && property_exists($this->relations, $relation)) {
+            return true;
+        }
+        $relations = array_values($this->relations)[0];
+
+        return isset($relations->{$relation});
     }
 
     /**
@@ -231,7 +239,21 @@ class Model extends Relationship implements JsonSerializable, IteratorAggregate,
      */
     public function getRelation($relation)
     {
-        return is_array($this->relations) ? $this->relations[$relation] : $this->relations->{$relation};
+        if ($this->hasKeyRelation($relation)) {
+            $relations = is_array($this->relations) ? (object) $this->relations : $this->relations;
+            return $relations->{$relation};
+        }
+        $relations = array_values($this->relations)[0];
+
+        return $relations->{$relation};
+    }
+
+    private function hasKeyRelation($relation)
+    {
+        if (is_array($this->relations)) {
+            return isset($this->relations[$relation]);
+        }
+        return property_exists($this->relations, $relation);
     }
 
     /**
@@ -392,8 +414,8 @@ class Model extends Relationship implements JsonSerializable, IteratorAggregate,
      */
     public function save(array $data = []): bool
     {
-        if (!empty($update)) {
-            $this->setAttributes($update);
+        if (!empty($data)) {
+            $this->setAttributes($data);
         }
 
         return $this->serve(false)->insert($this->getAttributes());

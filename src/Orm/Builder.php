@@ -143,6 +143,12 @@ class Builder
             return $this->model->cloneInstance( $result);
         });
     }
+
+    public function sql()
+    {
+        return ['sql' => $this->convertToSql(), 'params' => $this->getParameters() ];
+    }
+
     /**
      * Convert the query select to sql
      *
@@ -1004,6 +1010,31 @@ class Builder
             $query = sprintf('CALL %s', $procedure);
             $stm = $connection->prepared($query);
             return $stm->execute();
+        }
+    }
+
+    public function rawQuery($query, $select = true)
+    {
+
+        $connection = $this->getConnection();
+
+        $stm = $connection->prepared($query);
+
+        $stm->execute();
+
+        if ($select) {
+            $result = new Collection($stm->fetchAll());
+
+            if ($this->model) {
+                if ($result->count() == 1) {
+                    return $this->model->cloneInstance($result->first());
+                }
+                return $result->map(function($item){
+                    return $this->model->cloneInstance($item);
+                });
+            }
+
+            return $result;
         }
     }
 }

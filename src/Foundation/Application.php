@@ -90,12 +90,12 @@ class Application implements App
      */
     public function setRenderer(Renderable $render)
     {
-        if (!$this->route->container) {
+        if (!$this->getContainer()) {
             throw new \Fenix\Container\ContainerException(
                 "You need to define a class the implements Fenix\Contracts\Container\Container first."
             );
         }
-        $this->route->container->bind('renderer', $render);
+        $this->getContainer()->bind('renderer', $render);
     }
 
     /**
@@ -105,12 +105,12 @@ class Application implements App
      */
     public function getRenderer(): Renderable
     {
-        if ($this->route->container->has('renderer')) {
-            return $this->route->container->get('renderer');
+        if ($this->getContainer()->has('renderer')) {
+            return $this->getContainer()->get('renderer');
         }
 
         try {
-            return Collection::create($this->route->container->getDependencies())->filter(function($dependencies){
+            return Collection::create($this->getContainer()->getDependencies())->filter(function($dependencies){
                 return $dependencies instanceof Renderable;
             })->first();
         } catch(\Throwable $e) {
@@ -196,7 +196,7 @@ class Application implements App
 
     public function addDependency($key, $object)
     {
-        $this->route->container->bind($key, $object);
+        $this->getContainer()->bind($key, $object);
     }
 
     public function setDebug(bool $debug)

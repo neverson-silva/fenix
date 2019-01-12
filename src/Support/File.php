@@ -268,17 +268,30 @@ class File implements FilesystemInterface
         //throw new \Exception("Invalid directory or filename.");
     }
 
-    public function save($name = null, $dontUseFullName = false, $content = null, $options = 'w+')
+    /**
+     * Save with contente
+     *
+     * @param string $name
+     * @param string $content
+     * @param string $options
+     * @return bool
+     */
+    public function saveWithContent($name, $content, $options = 'w+')
+    {
+        return $this->save($name, false, $content, $options, true);
+    }
+
+    public function save($name = null, $dontUseFullName = false, $content = null, $options = 'w+', $with = false)
     {
 
         if (!$name && !$dontUseFullName && !$content) {
             $name = $this->fullName();
         } else {
-            $name = $this->getPath() . DIRECTORY_SEPARATOR . $name . '.' . $this->getExtension();
-
+            if (!$with) {
+                $name = $this->getPath() . DIRECTORY_SEPARATOR . $name . '.' . $this->getExtension();
+            }
             if ($dontUseFullName == false) {
                 if (!is_null($name)) $this->newName($name);
-
                 if (!is_null($this->newName)) {
                     $name = $this->fullNewName();
                 } else {
