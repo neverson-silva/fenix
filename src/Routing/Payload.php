@@ -24,15 +24,41 @@ class Payload
     public static function get($input = null)
     {
         $request = file_get_contents("php://input");
-        $request = json_decode($request);
+
+        if (is_string($request) && stripos($request, '&') || stripos($request, '=')) {
+           $request = static::parseBody(urldecode($request));
+        } else {
+            $request = json_decode($request);
+        }
+
         if ($input !== null) {
             if (is_array($request)) {
-                return $request[$input];
+                return $request[$input] ?? null;
             } elseif (is_object($request)) {
-                return $request->$input;
+                return $request->$input ?? null;
             }
         }
         return $request;
+    }
+
+    private static function parseBody($body)
+    {
+        if (stripos($body, '&')) {
+            $firstLevel = explode('&', $body);
+
+            $parsed = [];
+
+            foreach ($firstLevel as $value) {
+                $secondLevel = explode('=', $value);
+                $parsed[$secondLevel[0]] = $secondLevel[1];
+            }
+            return $parsed;
+        } else {
+            $explode = explode('=', $body);
+
+            return [ $explode[0] => $explode[1] ];
+        }
+
     }
     /**
      * Get all requisitions input from payload
