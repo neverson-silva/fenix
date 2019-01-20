@@ -65,6 +65,20 @@ class Strin
     }
 
 
+    /**
+     * Explode into new Arra instance
+     * @param $delimiter
+     * @return Arra
+     */
+    public function split($delimiter) : Arra
+    {
+        $new = new Arra(explode($delimiter, $this->value));
+
+        return $new->map(function($value){
+            return new static($value);
+        });
+    }
+
      /**
      * Implode an array into a string in a static context
      *

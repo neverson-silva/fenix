@@ -2,13 +2,14 @@
 
 namespace Fenix\Orm;
 
-use Fenix\Orm\Grammars\Grammar;
+use Fenix\Contracts\Support\Jsonable;
 use Fenix\Orm\Collection\Collection;
+use Fenix\Orm\Grammars\Grammar;
 use InvalidArgumentException;
+use JsonSerializable;
 
 class Builder
 {
-
     public $connection;
 
     public $grammar;
@@ -144,6 +145,29 @@ class Builder
         });
     }
 
+    /**
+     * Get the results and automatically converts to a json representation
+     *
+     * @param array $columns
+     * @return string
+     */
+    public function asJson($columns = ['*'])
+    {
+        $results = $this->get($columns);
+
+        if ($results instanceof Jsonable) {
+            return $results->toJson();
+        } elseif ($results instanceof JsonSerializable) {
+            return json_encode($results->jsonSerialize());
+        }
+        return json_encode($results);
+    }
+
+    /**
+     * Get the sql
+     *
+     * @return array
+     */
     public function sql()
     {
         return ['sql' => $this->convertToSql(), 'params' => $this->getParameters() ];

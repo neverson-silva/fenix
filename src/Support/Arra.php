@@ -2,6 +2,7 @@
 
 namespace Fenix\Support;
 
+use Fenix\Support\Collection;
 use IteratorAggregate;
 use ArrayAccess;
 use ArrayIterator;
@@ -30,6 +31,16 @@ class Arra implements ArrayAccess, IteratorAggregate, Countable
     public function getItems()
     {
         return $this->items;
+    }
+
+    public function add($key, $value)
+    {
+        $this->items[$key] = $value;
+    }
+
+    public function toCollection()
+    {
+        return new Collection($this->items);
     }
 
 
