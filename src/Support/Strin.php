@@ -130,7 +130,7 @@ class Strin
     private static function mapString(array $values)
     {
         return array_map(function($value){
-            return $value instanceof self ? $value->getValue() : (string) $value;
+            return (string) $value;
         }, $values);
     }
 
@@ -301,7 +301,7 @@ class Strin
      */
     public function lenght()
     {
-        return strlen($this->value);
+        return static::size($this->value);
     }
 
     /**

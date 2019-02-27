@@ -62,32 +62,6 @@ class Model extends Relationship implements JsonSerializable, IteratorAggregate,
         $this->getDefaultConnection();
     }
 
-    /**
-     * Definining Model table's name
-     * Default Model class name lower case + s
-     *
-     * @param string $table Model's table name [optional]
-     * @return void
-     */
-    public function setTable($table = null)
-    {
-        if ($table === null) {
-            $table = $this->pluralize($table);
-        }
-        $this->table = $table;
-
-        return $this;
-    }
-
-    /**
-     * Get model tables name
-     *
-     * @return string
-     */
-    public function getTable()
-    {
-        return $this->table;
-    }
 
     /**
      * Pluralize a string
@@ -108,152 +82,6 @@ class Model extends Relationship implements JsonSerializable, IteratorAggregate,
             $table = strtolower(array_pop($class)) . 'es';
         }
         return $table;
-    }
-
-    /**
-     * Setting model primary_key
-     * Defult lowercase model name + _id
-     *
-     * @param string $key PrimaryKey name
-     * @return Model
-     */
-    public function setPrimaryKey(string $key = null)
-    {
-        if (empty($key)) {
-            $class = explode('\\', get_class($this));
-            $this->primaryKey = strtolower(array_pop($class)) . '_id';
-            return $this;
-        }
-        $this->primaryKey = $key;
-        return $this;
-    }
-
-    /**
-     * Get primary key name
-     *
-     * @return string
-     */
-    public function getPrimaryKey()
-    {
-        return $this->primaryKey;
-    }
-
-    /**
-     * @param $attributes set an array of attributes
-     */
-    public function setAttributes($attributes)
-    {
-        if (empty($attributes) || !is_array($attributes)) {
-            return;
-        }
-        foreach ($attributes as $column => $value) {
-            $this->setAttribute($column, $value);
-        }
-    }
-
-    /**
-     * Get Model attributes
-     *
-     * @return array
-     */
-    public function getAttributes()
-    {
-        return (array) $this->attributes;
-    }
-
-    /**
-     * Set a attribute
-     *
-     * @param $attribute
-     * @param $value
-     */
-    public function setAttribute($attribute, $value)
-    {
-        $this->attributes->{$attribute} = $value;
-    }
-
-    /**
-     * Get attribute
-     * @param $attribute
-     * @return null
-     */
-    public function getAttribute($attribute)
-    {
-        return $this->hasAttribute($attribute) ? $this->attributes->{$attribute} : null;
-    }
-
-    /**
-     * Has attribute
-     *
-     * @param $attribute
-     * @return bool
-     */
-    public function hasAttribute($attribute)
-    {
-        return isset($this->attributes->{$attribute}) || property_exists($this->attributes, $attribute);
-    }
-
-    /**
-     * Check if has a relation
-     *
-     * @param $relation
-     * @return bool
-     */
-    public function hasRelation($relation)
-    {
-        if (!$this->relations) {
-            return false;
-        }
-
-        if (is_array($this->relations) && isset($this->relations[$relation])) {
-            return true;
-        } elseif (is_object($this->relations) && property_exists($this->relations, $relation)) {
-            return true;
-        }
-        $relations = array_values($this->relations)[0];
-
-        return isset($relations->{$relation});
-    }
-
-    /**
-     * Set relation
-     *
-     * @param $relation
-     * @param $value
-     */
-    public function setRelation($relation, $value)
-    {
-        if (is_array($this->relations)) {
-            $this->relations[$relation] = $value;
-        } else {
-            $this->relations->{$relation} = $value;
-        }
-        return $this;
-    }
-
-    /**
-     * Get a relation
-     *
-     * @param $relation
-     * @return mixed
-     */
-    public function getRelation($relation)
-    {
-        if ($this->hasKeyRelation($relation)) {
-            $relations = is_array($this->relations) ? (object) $this->relations : $this->relations;
-            return $relations->{$relation};
-        }
-        $relations = array_values($this->relations)[0];
-
-        return $relations->{$relation};
-    }
-
-    private function hasKeyRelation($relation)
-    {
-        if (is_array($this->relations)) {
-            return isset($this->relations[$relation]);
-        }
-        return property_exists($this->relations, $relation);
     }
 
     /**
@@ -278,20 +106,6 @@ class Model extends Relationship implements JsonSerializable, IteratorAggregate,
     public function setConnection(Connection $connection): void
     {
         $this->connection = $connection;
-    }
-
-    /**
-     * Get last inserted id in the table model
-     *
-     * @return int
-     */
-    public function lastInsertedId()
-    {
-        $id = $this->connection->table($this->getTable())
-                                ->max('devedor_id', 'id')
-                                ->get()->first()->id;
-
-        return TypeHint::castType($id);
     }
 
     /**
@@ -493,15 +307,6 @@ class Model extends Relationship implements JsonSerializable, IteratorAggregate,
     }
 
     /**
-     * When object is printed
-     * @return false|string
-     */
-    public function __toString()
-    {
-        return $this->toJson();
-    }
-
-    /**
      * Returns a json representation
      * @return false|string
      */
@@ -538,16 +343,34 @@ class Model extends Relationship implements JsonSerializable, IteratorAggregate,
         return $new->serve()->where($column, $operator, $value, $boolean);
     }
 
-    public function __call($name, $arguments)
+    /**
+     * Where is to found result by boolean columns
+     * @param $column
+     * @return Builder
+     */
+    public static function whereIs($column, $boolean = 1)
     {
-         return $this->serve()->{$name}(...$arguments);
+        return static::where($column, '=', $boolean);
+    }
+
+    /**
+     * Where not is to found result by boolean columns
+     * @param $column
+     * @param int $boolean
+     * @return Builder
+     */
+    public static function whereIsNot($column, $boolean = 0)
+    {
+        return static::where($column, '=', $boolean);
     }
 
     public function table($table)
     {
         $this->setTable($table);
 
-        $builder =  $this->getConnection()->newBuilder($this)->from($this->getTable());
+        $builder =  $this->getConnection()
+                         ->newBuilder($this)
+                         ->from($this->getTable());
 
         return $builder;
     }
@@ -613,6 +436,193 @@ class Model extends Relationship implements JsonSerializable, IteratorAggregate,
         }
 
         return $this->serve(false)->insertWithLastInsertedId($this->getAttributes());
+    }
+
+    public function __call($name, $arguments)
+    {
+        return $this->serve()->{$name}(...$arguments);
+    }
+
+    /**
+     * Definining Model table's name
+     * Default Model class name lower case + s
+     *
+     * @param string $table Model's table name [optional]
+     * @return void
+     */
+    public function setTable($table = null)
+    {
+        if ($table === null) {
+            $table = $this->pluralize($table);
+        }
+        $this->table = $table;
+
+        return $this;
+    }
+
+    /**
+     * Get model tables name
+     *
+     * @return string
+     */
+    public function getTable()
+    {
+        return $this->table;
+    }
+
+    /**
+     * Setting model primary_key
+     * Defult lowercase model name + _id
+     *
+     * @param string $key PrimaryKey name
+     * @return Model
+     */
+    public function setPrimaryKey(string $key = null)
+    {
+        if (empty($key)) {
+            $class = explode('\\', get_class($this));
+            $this->primaryKey = strtolower(array_pop($class)) . '_id';
+            return $this;
+        }
+        $this->primaryKey = $key;
+        return $this;
+    }
+
+    /**
+     * Get primary key name
+     *
+     * @return string
+     */
+    public function getPrimaryKey()
+    {
+        return $this->primaryKey;
+    }
+
+    /**
+     * @param $attributes set an array of attributes
+     */
+    public function setAttributes($attributes)
+    {
+        if (empty($attributes) || !is_array($attributes)) {
+            return;
+        }
+        foreach ($attributes as $column => $value) {
+            $this->setAttribute($column, $value);
+        }
+    }
+
+    /**
+     * Get Model attributes
+     *
+     * @return array
+     */
+    public function getAttributes()
+    {
+        return (array) $this->attributes;
+    }
+
+    /**
+     * Set a attribute
+     *
+     * @param $attribute
+     * @param $value
+     */
+    public function setAttribute($attribute, $value)
+    {
+        $this->attributes->{$attribute} = $value;
+    }
+
+    /**
+     * Get attribute
+     * @param $attribute
+     * @return null
+     */
+    public function getAttribute($attribute)
+    {
+        return $this->hasAttribute($attribute) ? $this->attributes->{$attribute} : null;
+    }
+
+    /**
+     * Has attribute
+     *
+     * @param $attribute
+     * @return bool
+     */
+    public function hasAttribute($attribute)
+    {
+        return isset($this->attributes->{$attribute}) || property_exists($this->attributes, $attribute);
+    }
+
+    /**
+     * Check if has a relation
+     *
+     * @param $relation
+     * @return bool
+     */
+    public function hasRelation($relation)
+    {
+        if (!$this->relations) {
+            return false;
+        }
+
+        if (is_array($this->relations) && isset($this->relations[$relation])) {
+            return true;
+        } elseif (is_object($this->relations) && property_exists($this->relations, $relation)) {
+            return true;
+        }
+        $relations = array_values($this->relations)[0];
+
+        return isset($relations->{$relation});
+    }
+
+    /**
+     * Set relation
+     *
+     * @param $relation
+     * @param $value
+     */
+    public function setRelation($relation, $value)
+    {
+        if (is_array($this->relations)) {
+            $this->relations[$relation] = $value;
+        } else {
+            $this->relations->{$relation} = $value;
+        }
+        return $value;
+    }
+
+    /**
+     * Get a relation
+     *
+     * @param $relation
+     * @return mixed
+     */
+    public function getRelation($relation)
+    {
+        if ($this->hasKeyRelation($relation)) {
+            $relations = is_array($this->relations) ? (object) $this->relations : $this->relations;
+            return $relations->{$relation};
+        }
+        $relations = array_values($this->relations)[0];
+
+        return $relations->{$relation};
+    }
+
+    private function hasKeyRelation($relation)
+    {
+        if (is_array($this->relations)) {
+            return isset($this->relations[$relation]);
+        }
+        return property_exists($this->relations, $relation);
+    }
+
+    /**
+     * When object is printed
+     * @return false|string
+     */
+    public function __toString()
+    {
+        return $this->toJson();
     }
 
 }
