@@ -46,7 +46,7 @@ class Grammar extends BaseGrammar
             return $this->concatenateSql($sql);
         }
 
-        public function compilarcolumnsaggregate($builder)
+        public function compilarColumnsAggregate($builder)
         {
             $columns = $builder->columns ? $this->colunize($builder->columns) : '';
 
