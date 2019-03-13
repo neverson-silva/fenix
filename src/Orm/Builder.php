@@ -674,7 +674,7 @@ class Builder
         if (empty($this->groups)) {
             $this->groups = $columns;
         } else {
-            $this->groups = array_merge((array) $this->merge, $columns);
+            $this->groups = array_merge((array) $this->groups, $columns);
         }
         return $this;
     }
