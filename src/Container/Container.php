@@ -9,6 +9,7 @@ use Fenix\Container\ContainerException;
 use Fenix\Http\Message\Response;
 use Fenix\Support\Collection;
 use ReflectionFunction;
+use ReflectionProperty;
 use ReflectionMethod;
 use ReflectionClass;
 use Exception;
@@ -159,6 +160,17 @@ class Container implements ContainerContract
 
         if (!$constructor || $constructor == null) {
             $new = new $reflected->name;
+            $objectProperties = $this->getClassProperties($reflected->getProperties());
+
+            if (!$objectProperties->isEmpty()) {
+
+                $objectProperties->onEach(function($op, $key) use($reflected, $new){
+                    $property = $reflected->getProperty($key);
+                    $property->setAccessible(true);
+                    $property->setValue($new, $this->solveClass($op));
+                });
+            }
+
         } else {
             $parameters = $this->inject($constructor, $dependencies);
             $new = $parameters instanceof Reflector
@@ -169,6 +181,27 @@ class Container implements ContainerContract
             $this->container->add(get_class($new), $new);
         }
         return $new;
+    }
+
+    /**
+     * Get class compositions
+     * @param array $properties
+     * @return Collection
+     */
+    private function getClassProperties(array $properties): Collection {
+
+        $props = new Collection();
+        $properties = new Collection($properties);
+        $properties->filter(fn(ReflectionProperty $prop) => !$prop->getType()->isBuiltin());
+        if (!$properties->isEmpty() ) {
+            $properties->onEach(function (ReflectionProperty $property) use($props){
+                $key = $property->getName();
+                $type = $property->getType()->getName();
+                $props->put($key, $type);
+            });
+        }
+
+        return $props;
     }
 
     /**
