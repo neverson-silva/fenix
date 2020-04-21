@@ -158,7 +158,7 @@ class Container implements ContainerContract
         }
         $constructor = $reflected->getConstructor();
 
-        if (!$constructor || $constructor == null) {
+        if (!$constructor || $constructor == null || $constructor->getNumberOfParameters() == 0) {
             $new = new $reflected->name;
             $objectProperties = $this->getClassProperties($reflected->getProperties());
 
@@ -191,8 +191,10 @@ class Container implements ContainerContract
     private function getClassProperties(array $properties): Collection {
 
         $props = new Collection();
-        $properties = new Collection($properties);
-        $properties->filter(fn(ReflectionProperty $prop) => !$prop->getType()->isBuiltin());
+        $properties = (new Collection($properties))->filter(fn($p) => $p !== null && $p->getType() != null);
+        $properties->filter(function(ReflectionProperty $prop) {
+            return $prop !== null && !$prop->getType()->isBuiltin();
+        });
         if (!$properties->isEmpty() ) {
             $properties->onEach(function (ReflectionProperty $property) use($props){
                 $key = $property->getName();
