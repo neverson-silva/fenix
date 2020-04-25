@@ -192,15 +192,18 @@ class Container implements ContainerContract
 
         $props = new Collection();
         $properties = (new Collection($properties))->filter(fn($p) => $p !== null && $p->getType() != null);
-        $properties->filter(function(ReflectionProperty $prop) {
-            return $prop !== null && !$prop->getType()->isBuiltin();
-        });
-        if (!$properties->isEmpty() ) {
-            $properties->onEach(function (ReflectionProperty $property) use($props){
-                $key = $property->getName();
-                $type = $property->getType()->getName();
-                $props->put($key, $type);
+
+        if ($properties instanceof Collection) {
+            $properties->filter(function(ReflectionProperty $prop) {
+                return $prop !== null && !$prop->getType()->isBuiltin();
             });
+            if (!$properties->isEmpty() ) {
+                $properties->onEach(function (ReflectionProperty $property) use($props){
+                    $key = $property->getName();
+                    $type = $property->getType()->getName();
+                    $props->put($key, $type);
+                });
+            }
         }
 
         return $props;
